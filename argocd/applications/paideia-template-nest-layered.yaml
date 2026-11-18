@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: paideia-template-nest-layered
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/paideia-code/paideia-poc-kubernetes-autoscaling.git
+    targetRevision: main
+    path: manifests/paideia-template-nest-layered
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: autoscaling
+
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: false
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true

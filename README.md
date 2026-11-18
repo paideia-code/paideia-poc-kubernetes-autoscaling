@@ -1,65 +1,62 @@
 # paideia-poc-kubernetes-autoscaling
 
-POC para estudiar escalamiento horizontal automático de pods mediante HPA, métricas de CPU y generación de carga. Actualmente permite crear el clúster local e instalar Argo CD.
+Laboratorio local con kind, Argo CD, Metrics Server y Nest. **Pendiente:** HPA y prueba de carga.
 
 ## Requisitos
 
-- Docker en ejecución, con contenedores Linux.
-- kind 0.33.0.
-- kubectl.
-- Helm 4.3.1.
-- Bash: Linux/macOS o Git Bash en Windows.
+- Docker en ejecución con contenedores Linux.
+- kind 0.33.0, kubectl, Helm 4.3.1 y Bash (Git Bash en Windows).
+- Internet para descargar imágenes, charts y consultar GitHub.
 
-kind crea el clúster sobre Docker. Si utilizas Docker Desktop, este clúster es independiente de su Kubernetes integrado.
+## Estructura
 
-## Archivos
-
-| Archivo | Función |
+| Carpeta | Contenido |
 | --- | --- |
-| [cluster/kind.yaml](cluster/kind.yaml) | Clúster de un nodo con Kubernetes 1.36.4 e imagen fijada por digest. |
-| [argocd/install/values.yaml](argocd/install/values.yaml) | Configuración local de Argo CD, incluida la contraseña de administrador. |
-| [scripts/up.sh](scripts/up.sh) | Crear el clúster si falta, esperar los nodos e instalar o actualizar Argo CD con el chart 10.17.0. |
+| [bootstrap/](bootstrap/) | Arranque del clúster e instalación de Argo CD. |
+| [argocd/](argocd/) | Aplicación raíz y registro de Metrics Server y Nest. |
+| [manifests/](manifests/) | Deployment y Service de Nest. |
 
-## Levantar el entorno
+## Ejecución
 
-Desde la raíz del repositorio:
+1. Desde la raíz del repositorio, ejecutar:
 
-```bash
-bash scripts/up.sh
-```
+   ```bash
+   bash bootstrap/up.sh
+   ```
 
-El script reutiliza el clúster si ya existe. Los cambios en `cluster/kind.yaml` requieren recrearlo; los valores de Argo CD se aplican al repetir el script.
+2. Comprobar las aplicaciones y las métricas:
 
-Comprobar:
+   ```bash
+   kubectl --context kind-paideia-poc-kubernetes-autoscaling -n argocd get applications
+   kubectl --context kind-paideia-poc-kubernetes-autoscaling -n autoscaling top pods
+   ```
 
-```bash
-kubectl --context kind-paideia-poc-kubernetes-autoscaling get nodes
+- Esperar las tres aplicaciones en `Synced / Healthy`; las métricas pueden tardar unos instantes.
+- El script reutiliza el clúster existente. Los cambios en `bootstrap/kind.yaml` requieren recrearlo.
 
-kubectl --context kind-paideia-poc-kubernetes-autoscaling \
-  -n argocd get pods
-```
+## Acceso
 
-Se espera un nodo `Ready` y los pods de Argo CD en `Running`, con `READY 1/1`.
-
-## Acceder a Argo CD
-
-Ejecutar en una terminal y mantenerla abierta:
+Mantener cada túnel en una terminal distinta:
 
 ```bash
-kubectl --context kind-paideia-poc-kubernetes-autoscaling \
-  -n argocd port-forward svc/argocd-server 20443:443
+# Argo CD
+kubectl --context kind-paideia-poc-kubernetes-autoscaling -n argocd port-forward svc/argocd-server 20443:443
+
+# Nest
+kubectl --context kind-paideia-poc-kubernetes-autoscaling -n autoscaling port-forward svc/paideia-template-nest-layered 23000:3000
 ```
 
-Abrir [https://localhost:20443](https://localhost:20443). Credenciales de este laboratorio local: **admin / admin**. El navegador puede advertir sobre el certificado autofirmado.
+| Servicio | Acceso |
+| --- | --- |
+| Argo CD | [https://localhost:20443](https://localhost:20443) · `admin` / `admin` · aceptar el certificado local. |
+| Nest | `curl --fail http://localhost:23000/health` → `{"status":"ok"}`. |
 
-`Ctrl+C` cierra el túnel; el clúster sigue funcionando.
+`Ctrl+C` cierra el túnel. Si se reemplaza su pod, volver a ejecutar el túnel.
 
-## Bajar el clúster
+## Eliminar el clúster
 
 ```bash
 kind delete cluster --name paideia-poc-kubernetes-autoscaling
 ```
 
-Elimina el clúster de la POC y sus recursos y datos internos. Los archivos del repositorio se conservan. Para reconstruirlo, repetir `bash scripts/up.sh`.
-
-La retirada requiere un único comando; no se necesita `down.sh`.
+Elimina sus recursos y datos internos. Para reconstruirlo: `bash bootstrap/up.sh`.

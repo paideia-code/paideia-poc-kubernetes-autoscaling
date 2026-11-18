@@ -12,7 +12,7 @@ clusters="$(kind get clusters)"
 
 if ! grep -Fxq "$cluster_name" <<< "$clusters"; then
   kind create cluster \
-    --config cluster/kind.yaml \
+    --config bootstrap/kind.yaml \
     --wait 180s
 fi
 
@@ -30,6 +30,11 @@ helm upgrade --install argocd argo/argo-cd \
   --kube-context "$context" \
   --namespace argocd \
   --create-namespace \
-  -f argocd/install/values.yaml \
+  -f bootstrap/argocd-values.yaml \
   --wait \
   --timeout 10m
+
+kubectl --context "$context" apply \
+  -f argocd/root-application.yaml
+
+printf '\nRaíz registrada. Argo CD instalará las aplicaciones desde Git.\n'

@@ -102,3 +102,16 @@ kind delete cluster --name paideia-poc-kubernetes-autoscaling
 ```
 
 Elimina sus recursos y datos internos. Para reconstruirlo: `bash bootstrap/up.sh`.
+
+## Prácticas futuras
+
+Ya probamos el escalamiento automático de **pods** con HPA. Estas etapas son opcionales y están pendientes:
+
+| Orden | Práctica | Objetivo |
+| --- | --- | --- |
+| 1 | Distribución entre nodos | Declarar varios nodos en `bootstrap/kind.yaml`, recrear el clúster y observar dónde Kubernetes coloca los pods. |
+| 2 | Falta de capacidad | Observar pods `Pending` cuando sus solicitudes no caben en los nodos existentes. El HPA puede pedir más pods, pero kind no añade nodos automáticamente. |
+| 3 | Escalamiento automático de nodos en AWS | Añadir una configuración EKS con Karpenter: el HPA ajusta los pods y Karpenter crea o retira máquinas EC2 según la capacidad necesaria. |
+
+- **Kind:** crea los nodos declarados al iniciar el clúster. Son contenedores que comparten los recursos del PC; añadirlos no aumenta su capacidad física.
+- **AWS:** permitiría practicar creación y retirada automática de máquinas; requiere configuración adicional, permisos y costos.
